@@ -11,7 +11,7 @@ webServer.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
 webServer.bind(server)
 webServer.listen(5)
 print("Web server application is running on: \nHost:\t",HOST,"\nPort:\t",PORT)
-print("??")
+
 
 checkPwd=False
 while True:
@@ -20,26 +20,26 @@ while True:
     request=connector.recv(1024).decode('utf-8')
     spiltReqList=request.split(' ')
     method=spiltReqList[0]
-    fileName=spiltReqList[1]
-    fileName=fileName.spilt('?')[0]
+    reqFile=spiltReqList[1]
+    fileName=reqFile.spilt('?')[0]
     fileName=fileName.lstrip('/')
-    if(method='GET'):
-        if(((fileName='info.html'or fileName='files.html')and checkPwd=False) or fileName=''):
-            fileName=index.html
+    if(method=='GET'):
+        if(((fileName=='info.html'or fileName=='files.html')and checkPwd==False) or fileName==''):
+            fileName='index.html'
             header = "HTTP/1.1 301 Moved Permanently\n"+"Location: /" + fileName
             print('Server response:',header)
             response=header.encode('utf-8')
             connector.send(response)
             connector.close()
             continue
-        if(fileName='index.html'):
+        if(fileName=='index.html'):
             checkPwd=False
-        if(fileName='files.html')
-            filesHTML=open(html,'r')
+        if(fileName=='files.html'):
+            filesHTML=open('files.html','r')
             content=filesHTML.read()
             path='files'
             filesList=os.listdir(path)
-            for i in listfile: 
+            for i in filesList: 
                 dirF = path + "/"
                 dirF = dirF + i
                 filesHTML+= '<tr><form action="' + dirF + '" method="GET"><td></i><i class="fa fa-file-o"><input class ="link" type="submit" value="' + i + '" /></form>'
