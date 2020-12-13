@@ -4,49 +4,19 @@ import os
 import os.path
 import time
 
-# PORT = 8080
-# HOST = 'localhost'
 PORT = 80
 HOST = socket.gethostbyname(socket.gethostname())
-code_files = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/index.html" method="POST"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
+files_html = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/index.html" method="POST"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
 
-# socket.gethostbyname(socket.getfqdn(socket.gethostname()))
-my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-my_socket.bind((HOST, PORT))
-my_socket.listen(1)
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server.bind((HOST, PORT))
+server.listen(1)
 print('Host:', HOST)
 print('Serving on port ', PORT)
 
-# check = True
-# header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + myfile
-# print(header)
-# final_response = header.encode('utf-8')
-# connection.send(final_response)
-# connection.close()
-# continue
-# else:
-# myfile = '404.html'
-# check = False
-
-# header = 'HTTP/1.1 404 Not Found\n\n'
-#         file2 = open('404.html', 'r')
-#         response = file2.read()
-#         file2.close()
-#         response = response.encode('utf-8')
-
-# header = 'HTTP/1.1 200 OK\n'
-# mimetype = 'text/html'
-# header += 'Content-Type: ' + str(mimetype) + '\n\n'
-# print('Server response: ', header)
-# final_response = header.encode('utf-8')
-# final_response += code_files.encode('utf-8')
-# connection.send(final_response)
-# connection.close()
-
 
 def MovePage(filename, connector):
-    # content = "".encode('utf-8')
     header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + filename
     print(header)
     if(filename == "404.html"):
@@ -61,166 +31,192 @@ def MovePage(filename, connector):
         header += 'Content-Type: ' + str(mimetype) + '\n\n'
         print('Server response: ', header)
         respone = header.encode('utf-8')
-        respone += code_files.encode('utf-8')
+        respone += files_html.encode('utf-8')
     else:
         respone = header.encode('utf-8')
     connector.send(respone)
     connector.close()
 
-
-check = False  # True when username password accepted
+checkPwd = False  # True when username password accepted
 while True:
-    connection, address = my_socket.accept()
-    request = connection.recv(1024).decode('utf-8')
+    connector, address = server.accept()
+    request = connector.recv(1024).decode('utf-8')
     if (request == ""):
-        connection.close()
+        connector.close()
         continue
     string_list = request.split(' ')  # Split request from spaces
     method = string_list[0]
-    requesting_file = string_list[1]
-    print('Client request ', method, requesting_file, "??")
+    file_request = string_list[1]
+    print('Client request ', method, file_request, "??")
 
-    myfile = requesting_file.split('?')[0]  # After the "?" symbol not relevent here
-    myfile = myfile.lstrip('/')
+    filename = file_request.split('?')[0]  # After the "?" symbol not relevent here
+    filename = filename.lstrip('/')
     if (method == 'GET'):
         # Load index file as default
         # Check info, prevent connect to info.html when don't enter username-password
-        if (myfile == '' or (myfile == 'info.html' and check == False)):
-            myfile = 'index.html'
-            # header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + myfile
-            # print(header)
-            # final_response = header.encode('utf-8')
-            # connection.send(final_response)
-            # connection.close()
-            # continue
-            MovePage(myfile, connection)
+        if(((filename=='info.html'or filename=='files.html')and checkPwd==False) or filename==''):
+            filename = 'index.html'
+            MovePage(filename, connector)
             continue
-        if (myfile == 'index.html'):
-            check = False
-        if (myfile == 'files.html'):
+        if (filename == 'index.html'):
+            checkPwd = False
+        if (filename == 'files.html'):
             pathF = 'files'
             listfile = os.listdir(pathF)
-            # code_files = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/index.html" method="POST"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
             for i in listfile:
                 dirF = pathF + "/"
                 dirF = dirF + i
                 day_m = os.path.getmtime(dirF)
-                code_files += '<tr><form action="' + dirF + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
+                files_html += '<tr><form action="' + dirF + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
                 day_m2 = time.localtime(day_m)
                 size = os.path.getsize(dirF)
-                code_files += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(
+                files_html += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(
                     day_m2.tm_mday) + ' ' + str(day_m2.tm_hour) + ':' + str(day_m2.tm_min) + '</td>'
-                code_files += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
-            # header = 'HTTP/1.1 200 OK\n'
-            # mimetype = 'text/html'
-            # header += 'Content-Type: ' + str(mimetype) + '\n\n'
-            # print('Server response: ', header)
-            # final_response = header.encode('utf-8')
-            # final_response += code_files.encode('utf-8')
-            # connection.send(final_response)
-            # connection.close()
-            MovePage(myfile, connection)
+                files_html += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
+            MovePage(filename, connector)
             continue
-
     elif (method == 'POST'):
-        if (myfile == 'info.html'):
+        if (filename == 'info.html'):
             pass_and_user = string_list[-1].split('username=')[1]
-            _username = pass_and_user.split('&password=')[0]
-            _password = pass_and_user.split('&password=')[1]
-            print('Username: ', _username)
-            print('Password: ', _password)
-            if (_username == 'admin' and _password == 'admin'):
-                check = True
-                # header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + myfile
-                # print(header)
-                # final_response = header.encode('utf-8')
-                # connection.send(final_response)
-                # connection.close()
-                # continue
-                MovePage(myfile, connection)
+            username = pass_and_user.split('&password=')[0]
+            password = pass_and_user.split('&password=')[1]
+            print('Username: ', username)
+            print('Password: ', password)
+            if (username == 'admin' and password == 'admin'):
+                checkPwd = True
+                MovePage(filename, connector)
                 continue
             else:
-                myfile = '404.html'
-                check = False
-
+                filename = '404.html'
+                checkPwd = False
         else:
-            # header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + myfile
-            # print(header)
-            # final_response = header.encode('utf-8')
-            # connection.send(final_response)
-            # connection.close()
-            MovePage(myfile, connection)
+            MovePage(filename, connector)
             continue
     else:
-        connection.close()
+        connector.close()
         continue
     try:
-        file = open(myfile, 'rb')  # open file , r => read , b => byte format
-        response = file.read()
+        file = open(filename, 'rb')  # open file , r => read , b => byte format
+        content = file.read()
         file.close()
-        if (myfile == '404.html'):
-            # header = 'HTTP/1.1 404 Not Found\n\n'
-            # file2 = open(myfile, 'r')
-            # response = file2.read()
-            # file2.close()
-            # print('Server response: ', header)
-            # final_response = header.encode('utf-8')
-            # final_response += response.encode('utf-8')
-            # connection.send(final_response)
-            # connection.close()
-            MovePage(myfile, connection)
+        if (filename == '404.html'):
+            MovePage(filename, connector)
             continue
-
         else:
             header = 'HTTP/1.1 200 OK\n'
-
         # -- library not support pptx ...
-        if (myfile.endswith(".jpg") or myfile.endswith('.jpeg')):
+        if (filename.endswith(".jpg") or filename.endswith('.jpeg')):
             mimetype = 'image/jpg'
-        elif (myfile.endswith(".png")):
+        elif (filename.endswith(".png")):
             mimetype = 'image/png'
-        elif (myfile.endswith(".css")):
+        elif (filename.endswith(".css")):
             mimetype = 'text/css'
-        elif (myfile.endswith('.html') or myfile.endswith('.htm')):
+        elif (filename.endswith('.html') or filename.endswith('.htm')):
             mimetype = 'text/html'
-        elif (myfile.endswith(".pdf")):
+        elif (filename.endswith(".pdf")):
             mimetype = 'application/pdf'
-        elif (myfile.endswith(".ppt")):
+        elif (filename.endswith(".ppt")):
             mimetype = 'application/vnd.ms-powerpoint'
-        elif (myfile.endswith(".pptx")):
+        elif (filename.endswith(".pptx")):
             mimetype = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-        elif (myfile.endswith(".rar")):
+        elif (filename.endswith(".rar")):
             mimetype = 'application/vnd.rar'
-        elif (myfile.endswith(".xls")):
+        elif (filename.endswith(".xls")):
             mimetype = 'application/vnd.ms-excel'
-        elif (myfile.endswith(".xlsx")):
+        elif (filename.endswith(".xlsx")):
             mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        elif (myfile.endswith(".doc")):
+        elif (filename.endswith(".doc")):
             mimetype = 'application/msword'
-        elif (myfile.endswith(".docx")):
+        elif (filename.endswith(".docx")):
             mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        elif (myfile.endswith(".zip")):
+        elif (filename.endswith(".zip")):
             mimetype = 'application/zip'
-        elif (myfile.endswith(".csv")):
+        elif (filename.endswith(".csv")):
             mimetype = 'text/csv'
-        elif (myfile.endswith(".php")):
+        elif (filename.endswith(".php")):
             mimetype = 'application/x-httpd-php'
-        elif (myfile.endswith(".mp3")):
+        elif (filename.endswith(".mp3")):
             mimetype = 'audio/mpeg'
-
         # mimetype = mimetypes.MimeTypes().guess_type(myfile)[0] -- library not support pptx...
-
         header += 'Content-Type: ' + str(mimetype) + '\n\n'
 
     except Exception as e:
         header = 'HTTP/1.1 404 Not Found\n\n'
         file2 = open('404.html', 'r')
-        response = file2.read()
+        content = file2.read()
         file2.close()
-        response = response.encode('utf-8')
-
+        content = content.encode('utf-8')
     print('Server response: ', header)
-    final_response = header.encode('utf-8')
-    final_response += response
-    connection.send(final_response)
-    connection.close()
+    response = header.encode('utf-8')
+    response += content
+    connector.send(response)
+    connector.close()
+
+# PORT = 80
+# HOST = 'localhost'
+# server=(HOST,PORT)
+# webServer=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+# webServer.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+# webServer.bind(server)
+# webServer.listen(5)
+# print("Web server application is running on: \nHost:\t",HOST,"\nPort:\t",PORT)
+#
+#
+# checkPwd=False
+# while True:
+#     connectClient=(connector,Client)=webServer.accept()
+#     print('New connection:\nClient:\t',Client[0],'\nPort:\t',Client[1])
+#     request=connector.recv(1024).decode('utf-8')
+#     spiltReqList=request.split(' ')
+#     method=spiltReqList[0]
+#     reqFile=spiltReqList[1]
+#     fileName=reqFile.spilt('?')[0]
+#     fileName=fileName.lstrip('/')
+#     if(method=='GET'):
+#         if(((fileName=='info.html'or fileName=='files.html')and checkPwd==False) or fileName==''):
+#             fileName='index.html'
+#             header = "HTTP/1.1 301 Moved Permanently\n"+"Location: /" + fileName
+#             print('Server response:',header)
+#             response=header.encode('utf-8')
+#             connector.send(response)
+#             connector.close()
+#             continue
+#         if(fileName=='index.html'):
+#             checkPwd=False
+#         if(fileName=='files.html'):
+#             filesHTML=open('files.html','r')
+#             content=filesHTML.read()
+#             path='files'
+#             filesList=os.listdir(path)
+#             for i in filesList:
+#                 dirF = path + "/"
+#                 dirF = dirF + i
+#                 filesHTML+= '<tr><form action="' + dirF + '" method="GET"><td></i><i class="fa fa-file-o"><input class ="link" type="submit" value="' + i + '" /></form>'
+#                 modDay= os.path.getmtime(dirF)
+#                 modDay = time.localtime(modDay)
+#                 size = round(os.path.getsize(dirF)/1024,1)
+#                 content += '<td>' + str(modDay.tm_year) + '-' + str(modDay.tm_mon) + '-' + str(modDay.tm_mday) +' ' + str(modDay.tm_hour) +':' + str(modDay.tm_min) +'</td>'
+#                 content += '<td>' + str(size) + 'KB</td></tr>'
+#             header = 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n'
+#             print('Server response: ',header)
+#             response=header+content
+#             response=response.encode('utf-8')
+#             connector.send()
+#             connector.close()
+#             continue
+#
+#             # for i in listfile:
+#             #     dirF = pathF + "/"
+#             #     dirF = dirF + i
+#             #     day_m = os.path.getmtime(dirF);
+#             #     code_files += '<tr><form action="' + dirF + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
+#             #     day_m2 = time.localtime(day_m)
+#             #     size = os.path.getsize(dirF)
+#             #     code_files += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(
+#             #         day_m2.tm_mday) + ' ' + str(day_m2.tm_hour) + ':' + str(day_m2.tm_min) + '</td>'
+#             #     code_files += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
+#
+#
+#
+#
+# >>>>>>> 705857f60e2c53e51347b24dfa5a0a35d377af13
