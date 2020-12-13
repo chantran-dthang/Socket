@@ -6,7 +6,6 @@ import time
 
 PORT = 80
 HOST = socket.gethostbyname(socket.gethostname())
-files_html = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/index.html" method="POST"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -27,8 +26,7 @@ def MovePage(filename, connector):
         respone = header.encode('utf-8') + content
     elif(filename == "files.html"):
         header = 'HTTP/1.1 200 OK\n'
-        mimetype = 'text/html'
-        header += 'Content-Type: ' + str(mimetype) + '\n\n'
+        header += 'Content-Type: text/html\n\n'
         print('Server response: ', header)
         respone = header.encode('utf-8')
         respone += files_html.encode('utf-8')
@@ -38,8 +36,10 @@ def MovePage(filename, connector):
     connector.close()
 
 checkPwd = False  # True when username password accepted
+
 while True:
-    connector, address = server.accept()
+    connectClient=(connector,Client)=server.accept()
+    print('Client:\t',Client[0])
     request = connector.recv(1024).decode('utf-8')
     if (request == ""):
         connector.close()
@@ -47,7 +47,7 @@ while True:
     string_list = request.split(' ')  # Split request from spaces
     method = string_list[0]
     file_request = string_list[1]
-    print('Client request ', method, file_request, "??")
+    print('Client request ', method, file_request)
 
     filename = file_request.split('?')[0]  # After the "?" symbol not relevent here
     filename = filename.lstrip('/')
@@ -60,19 +60,20 @@ while True:
             continue
         if (filename == 'index.html'):
             checkPwd = False
+            print('PLACE 2')
         if (filename == 'files.html'):
             pathF = 'files'
             listfile = os.listdir(pathF)
+            files_html = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/index.html" method="GET"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
             for i in listfile:
                 dirF = pathF + "/"
                 dirF = dirF + i
                 day_m = os.path.getmtime(dirF)
-                files_html += '<tr><form action="' + dirF + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
+                files_html += '<tr><form action="' + dirF + '" method="GET"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
                 day_m2 = time.localtime(day_m)
                 size = os.path.getsize(dirF)
-                files_html += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(
-                    day_m2.tm_mday) + ' ' + str(day_m2.tm_hour) + ':' + str(day_m2.tm_min) + '</td>'
-                files_html += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
+                files_html += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(day_m2.tm_mday) + ' ' + str(day_m2.tm_hour) + ':' + str(day_m2.tm_min) + '</td>'
+                files_html += '<td>' + str(round(size / 1024, 1)) + 'KB</td></tr>'
             MovePage(filename, connector)
             continue
     elif (method == 'POST'):
@@ -83,12 +84,14 @@ while True:
             print('Username: ', username)
             print('Password: ', password)
             if (username == 'admin' and password == 'admin'):
+
                 checkPwd = True
                 MovePage(filename, connector)
                 continue
             else:
                 filename = '404.html'
                 checkPwd = False
+
         else:
             MovePage(filename, connector)
             continue
