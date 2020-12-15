@@ -1,12 +1,10 @@
 import socket
-import mimetypes
 import os
 import os.path
 import time
 
 PORT = 80
 HOST = socket.gethostbyname(socket.gethostname())
-files_html = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/index.html" method="POST"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -16,7 +14,8 @@ print('Host:', HOST)
 print('Serving on port ', PORT)
 
 def MovePage(filename, connector):
-    header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + filename
+    header = "HTTP/1.1 301 Moved Permanently\n"+"Location: /" + filename
+             
     print(header)
     if(filename == "404.html"):
         header = 'HTTP/1.1 404 Not Found\n\n'
@@ -35,32 +34,33 @@ def MovePage(filename, connector):
         respone = header.encode('utf-8')
     connector.send(respone)
     connector.close()
-def readList(folder_name, folder_content):
+def readList(folder_name):
+    folder_content = '<!doctype html><html lang="en"><head><title>FILES</title><!-- Required meta tags --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"><link rel="shortcut icon" href="#"></head><body><style type="text/css">table {border-collapse: collapse;}th{font-size: 20px;color: blue;text-decoration: underline;border-bottom: 1px solid black;vertical-align: bottom;padding: 15px;}td{padding: 5px;}.btn-link {border: none;outline: none;background: none;cursor: pointer;color: #0000EE;padding: 0;text-decoration: underline;font-family: inherit;font-size: inherit;}</style><table><tr><th>Name</th><br><th>Last modified</th><th>Size</th><th>Description</th></tr><tr><form action="/info.html" method="GET"><td></i><i class="fa fa-arrow-left"><input class ="btn-link" type="submit" value="[Parent Directory]" /></form></tr>'
     listfile = os.listdir(folder_name)
     for i in listfile:
         dir = folder_name + "/"
         dir = dir + i
         day_mode = os.path.getmtime(dir)
-        folder_content += '<tr><form action="' + dir + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
+        folder_content += '<tr><form action="' + dir + '" method="GET"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
         day_mode2 = time.localtime(day_mode)
         size = os.path.getsize(dir)
         folder_content += '<td>' + str(day_mode2.tm_year) + '-' + str(day_mode2.tm_mon) + '-' + str(
             day_mode2.tm_mday) + ' ' + str(day_mode2.tm_hour) + ':' + str(day_mode2.tm_min) + '</td>'
-        folder_content += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
+        folder_content += '<td>' + str(round(size / 1024, 1)) + 'KB</td></tr>'
     return folder_content
 
 checkPwd = False
 while True:
     connector, address = server.accept()
+    print('Client:',address[0])
     request = connector.recv(1024).decode('utf-8')
     if (request == ""):
         connector.close()
         continue
-    string_list = request.split(' ')  # Split request from spaces
+    string_list = request.split(' ') 
     method = string_list[0]
     file_request = string_list[1]
-    print('Client request ', method, file_request)
-
+    print('Client request: ', method, file_request)
     filename = file_request.split('?')[0]
     filename = filename.lstrip('/')
     if (method == 'GET'):
@@ -71,7 +71,7 @@ while True:
         if (filename == 'index.html'):
             checkPwd = False
         if (filename == 'files.html'):
-            files_html = readList('files', files_html)
+            files_html = readList('download')
             MovePage(filename, connector)
             continue
     elif (method == 'POST'):
@@ -95,6 +95,29 @@ while True:
         connector.close()
         continue
     try:
+        if('download/' in filename):
+            header = 'HTTP/1.1 200 OK\n'
+            header +='Transfer-Encoding: chunked\n\n'
+            connector.send(header.encode('utf-8'))
+            file = open(filename,'rb') 
+            CHUNK_SIZE = 1024
+            chunk = file.read(CHUNK_SIZE)
+            while chunk:
+                content=b''
+                chunkSzHex=hex(len(chunk)).replace("0x","")
+                content+=chunkSzHex.encode('utf-8')
+                content+=b"""\r\n"""
+                content+=chunk
+                content+=b"""\r\n"""
+                connector.send(content)
+                chunk=file.read(CHUNK_SIZE)    
+            content+=b"""0\r\n
+            \r\n"""
+            connector.send(content)
+            print('Server response: ',header)
+            connector.close()  
+            file.close()
+            continue
         file = open(filename, 'rb')
         content = file.read()
         file.close()
@@ -102,8 +125,7 @@ while True:
             MovePage(filename, connector)
             continue
         else:
-            header = 'HTTP/1.1 200 OK\n'
-        header += 'Content-Type: ' + ".........." + '\n\n'
+            header = 'HTTP/1.1 200 OK\n\n'
     except Exception as e:
         header = 'HTTP/1.1 404 Not Found\n\n'
         file2 = open('404.html', 'r')
