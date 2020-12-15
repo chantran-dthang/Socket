@@ -15,7 +15,6 @@ server.listen(1)
 print('Host:', HOST)
 print('Serving on port ', PORT)
 
-
 def MovePage(filename, connector):
     header = "HTTP/1.1 301 Moved Permanently\n" + "Location: /" + filename
     print(header)
@@ -36,8 +35,21 @@ def MovePage(filename, connector):
         respone = header.encode('utf-8')
     connector.send(respone)
     connector.close()
+def readList(folder_name, folder_content):
+    listfile = os.listdir(folder_name)
+    for i in listfile:
+        dir = folder_name + "/"
+        dir = dir + i
+        day_mode = os.path.getmtime(dir)
+        folder_content += '<tr><form action="' + dir + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
+        day_mode2 = time.localtime(day_mode)
+        size = os.path.getsize(dir)
+        folder_content += '<td>' + str(day_mode2.tm_year) + '-' + str(day_mode2.tm_mon) + '-' + str(
+            day_mode2.tm_mday) + ' ' + str(day_mode2.tm_hour) + ':' + str(day_mode2.tm_min) + '</td>'
+        folder_content += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
+    return folder_content
 
-checkPwd = False  # True when username password accepted
+checkPwd = False
 while True:
     connector, address = server.accept()
     request = connector.recv(1024).decode('utf-8')
@@ -47,13 +59,11 @@ while True:
     string_list = request.split(' ')  # Split request from spaces
     method = string_list[0]
     file_request = string_list[1]
-    print('Client request ', method, file_request, "??")
+    print('Client request ', method, file_request)
 
-    filename = file_request.split('?')[0]  # After the "?" symbol not relevent here
+    filename = file_request.split('?')[0]
     filename = filename.lstrip('/')
     if (method == 'GET'):
-        # Load index file as default
-        # Check info, prevent connect to info.html when don't enter username-password
         if(((filename=='info.html'or filename=='files.html')and checkPwd==False) or filename==''):
             filename = 'index.html'
             MovePage(filename, connector)
@@ -61,18 +71,7 @@ while True:
         if (filename == 'index.html'):
             checkPwd = False
         if (filename == 'files.html'):
-            pathF = 'files'
-            listfile = os.listdir(pathF)
-            for i in listfile:
-                dirF = pathF + "/"
-                dirF = dirF + i
-                day_m = os.path.getmtime(dirF)
-                files_html += '<tr><form action="' + dirF + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
-                day_m2 = time.localtime(day_m)
-                size = os.path.getsize(dirF)
-                files_html += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(
-                    day_m2.tm_mday) + ' ' + str(day_m2.tm_hour) + ':' + str(day_m2.tm_min) + '</td>'
-                files_html += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
+            files_html = readList('files', files_html)
             MovePage(filename, connector)
             continue
     elif (method == 'POST'):
@@ -96,7 +95,7 @@ while True:
         connector.close()
         continue
     try:
-        file = open(filename, 'rb')  # open file , r => read , b => byte format
+        file = open(filename, 'rb')
         content = file.read()
         file.close()
         if (filename == '404.html'):
@@ -104,119 +103,17 @@ while True:
             continue
         else:
             header = 'HTTP/1.1 200 OK\n'
-        # -- library not support pptx ...
-        if (filename.endswith(".jpg") or filename.endswith('.jpeg')):
-            mimetype = 'image/jpg'
-        elif (filename.endswith(".png")):
-            mimetype = 'image/png'
-        elif (filename.endswith(".css")):
-            mimetype = 'text/css'
-        elif (filename.endswith('.html') or filename.endswith('.htm')):
-            mimetype = 'text/html'
-        elif (filename.endswith(".pdf")):
-            mimetype = 'application/pdf'
-        elif (filename.endswith(".ppt")):
-            mimetype = 'application/vnd.ms-powerpoint'
-        elif (filename.endswith(".pptx")):
-            mimetype = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-        elif (filename.endswith(".rar")):
-            mimetype = 'application/vnd.rar'
-        elif (filename.endswith(".xls")):
-            mimetype = 'application/vnd.ms-excel'
-        elif (filename.endswith(".xlsx")):
-            mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        elif (filename.endswith(".doc")):
-            mimetype = 'application/msword'
-        elif (filename.endswith(".docx")):
-            mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        elif (filename.endswith(".zip")):
-            mimetype = 'application/zip'
-        elif (filename.endswith(".csv")):
-            mimetype = 'text/csv'
-        elif (filename.endswith(".php")):
-            mimetype = 'application/x-httpd-php'
-        elif (filename.endswith(".mp3")):
-            mimetype = 'audio/mpeg'
-        # mimetype = mimetypes.MimeTypes().guess_type(myfile)[0] -- library not support pptx...
-        header += 'Content-Type: ' + str(mimetype) + '\n\n'
-
+        header += 'Content-Type: ' + ".........." + '\n\n'
     except Exception as e:
         header = 'HTTP/1.1 404 Not Found\n\n'
         file2 = open('404.html', 'r')
         content = file2.read()
         file2.close()
         content = content.encode('utf-8')
+
     print('Server response: ', header)
     response = header.encode('utf-8')
     response += content
     connector.send(response)
     connector.close()
 
-# PORT = 80
-# HOST = 'localhost'
-# server=(HOST,PORT)
-# webServer=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-# webServer.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-# webServer.bind(server)
-# webServer.listen(5)
-# print("Web server application is running on: \nHost:\t",HOST,"\nPort:\t",PORT)
-#
-#
-# checkPwd=False
-# while True:
-#     connectClient=(connector,Client)=webServer.accept()
-#     print('New connection:\nClient:\t',Client[0],'\nPort:\t',Client[1])
-#     request=connector.recv(1024).decode('utf-8')
-#     spiltReqList=request.split(' ')
-#     method=spiltReqList[0]
-#     reqFile=spiltReqList[1]
-#     fileName=reqFile.spilt('?')[0]
-#     fileName=fileName.lstrip('/')
-#     if(method=='GET'):
-#         if(((fileName=='info.html'or fileName=='files.html')and checkPwd==False) or fileName==''):
-#             fileName='index.html'
-#             header = "HTTP/1.1 301 Moved Permanently\n"+"Location: /" + fileName
-#             print('Server response:',header)
-#             response=header.encode('utf-8')
-#             connector.send(response)
-#             connector.close()
-#             continue
-#         if(fileName=='index.html'):
-#             checkPwd=False
-#         if(fileName=='files.html'):
-#             filesHTML=open('files.html','r')
-#             content=filesHTML.read()
-#             path='files'
-#             filesList=os.listdir(path)
-#             for i in filesList:
-#                 dirF = path + "/"
-#                 dirF = dirF + i
-#                 filesHTML+= '<tr><form action="' + dirF + '" method="GET"><td></i><i class="fa fa-file-o"><input class ="link" type="submit" value="' + i + '" /></form>'
-#                 modDay= os.path.getmtime(dirF)
-#                 modDay = time.localtime(modDay)
-#                 size = round(os.path.getsize(dirF)/1024,1)
-#                 content += '<td>' + str(modDay.tm_year) + '-' + str(modDay.tm_mon) + '-' + str(modDay.tm_mday) +' ' + str(modDay.tm_hour) +':' + str(modDay.tm_min) +'</td>'
-#                 content += '<td>' + str(size) + 'KB</td></tr>'
-#             header = 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n'
-#             print('Server response: ',header)
-#             response=header+content
-#             response=response.encode('utf-8')
-#             connector.send()
-#             connector.close()
-#             continue
-#
-#             # for i in listfile:
-#             #     dirF = pathF + "/"
-#             #     dirF = dirF + i
-#             #     day_m = os.path.getmtime(dirF);
-#             #     code_files += '<tr><form action="' + dirF + '" method="POST"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
-#             #     day_m2 = time.localtime(day_m)
-#             #     size = os.path.getsize(dirF)
-#             #     code_files += '<td>' + str(day_m2.tm_year) + '-' + str(day_m2.tm_mon) + '-' + str(
-#             #         day_m2.tm_mday) + ' ' + str(day_m2.tm_hour) + ':' + str(day_m2.tm_min) + '</td>'
-#             #     code_files += '<td>' + str(round(size / 1024, 1)) + 'M</td></tr>'
-#
-#
-#
-#
-# >>>>>>> 705857f60e2c53e51347b24dfa5a0a35d377af13
