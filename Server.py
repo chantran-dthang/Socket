@@ -41,7 +41,7 @@ def readList(folder_name):
         dir = folder_name + "/"
         dir = dir + i
         day_mode = os.path.getmtime(dir)
-        folder_content += '<tr><form action="' + dir + '" method="GET"><td></i><i class="fa fa-file-o"><input class ="btn-link" type="submit" value="' + i + '" /></form>'
+        folder_content += '<td><a href="'+dir+'" download>'+i+'</a></td>'
         day_mode2 = time.localtime(day_mode)
         size = os.path.getsize(dir)
         folder_content += '<td>' + str(day_mode2.tm_year) + '-' + str(day_mode2.tm_mon) + '-' + str(
